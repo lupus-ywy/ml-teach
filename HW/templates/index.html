@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CIFAR-10图像分类</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            text-align: right;
+            padding-right: 10px;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+        }
+        .prediction-item {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>CIFAR-10图像分类器</h1>
+
+    <div class="upload-area">
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" id="imageFile" name="image" accept="image/*" required>
+            <button type="submit">上传并预测</button>
+        </form>
+    </div>
+
+    <div id="result" class="result" style="display: none;">
+        <h2>预测结果</h2>
+        <p>预测类别: <strong id="predictedClass"></strong></p>
+        <p>置信度: <strong id="confidence"></strong></p>
+
+        <h3>各类别概率</h3>
+        <div id="probabilities"></div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData();
+            const fileInput = document.getElementById('imageFile');
+            formData.append('image', fileInput.files[0]);
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('predictedClass').textContent = data.predicted_class;
+                document.getElementById('confidence').textContent = (data.confidence * 100).toFixed(2) + '%';
+
+                const probabilitiesDiv = document.getElementById('probabilities');
+                probabilitiesDiv.innerHTML = '';
+
+                data.probabilities.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'prediction-item';
+                    itemDiv.innerHTML = `
+                        <div>${item.class}: ${(item.probability * 100).toFixed(2)}%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${(item.probability * 100)}%"></div>
+                        </div>
+                    `;
+                    probabilitiesDiv.appendChild(itemDiv);
+                });
+
+                document.getElementById('result').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('预测失败，请重试');
+            });
+        });
+    </script>
+</body>
+</html>
